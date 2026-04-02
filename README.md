@@ -156,7 +156,7 @@ The authoritative product specification lives in **`SPECIFICATION.md`** at the p
 ### Keeping the spec up to date
 
 Whenever you add a new feature or change an existing one, you MUST:
-1. Update the relevant section(s) of `SPECIFICATION.md` (see the Section Update Map in §18).
+1. Update the relevant section(s) of `SPECIFICATION.md` (see the Section Update Map in §19).
 2. Add a line to the `## Changelog` table at the bottom of `SPECIFICATION.md` with today's date.
 3. Update the "Recent Changes" list in this `replit.md`.
 4. Push the updated `SPECIFICATION.md` to GitHub (via the GitHub integration) alongside the feature code.

@@ -956,7 +956,7 @@ The HubSpot panel is the second tab in the BlockPicker sidebar.
 
 #### Connected State — Import Cards
 
-When connected, 9 import cards are shown. Each card fetches fresh data (`cache: "no-store"`) from the corresponding API endpoint and inserts a pre-populated block onto the canvas:
+When connected, 10 import cards are shown. Each card fetches fresh data (`cache: "no-store"`) from the corresponding API endpoint and inserts a pre-populated block onto the canvas:
 
 | Card | Block Type | Data Source | Block Title |
 |---|---|---|---|
@@ -966,8 +966,9 @@ When connected, 9 import cards are shown. Each card fetches fresh data (`cache: 
 | Pipeline Value | `stat` | `/api/hubspot/deals/summary` → `totalValue` | Pipeline Value |
 | Contacts | `stat` | `/api/hubspot/contacts/count` | Total Contacts |
 | Companies | `stat` | `/api/hubspot/companies/count` | Total Companies |
-| Win/Loss/Open | `bar-chart` | `/api/hubspot/deals/summary` | Win/Loss/Open Deals |
-| Pipeline by Stage | `bar-chart` | `/api/hubspot/deals/pipeline` | Pipeline by Stage |
+| Win / Loss / Open | `bar-chart` | `/api/hubspot/deals/summary` | Win/Loss/Open Deals |
+| Pipeline by Stage | `bar-chart` | `/api/hubspot/deals/pipeline` → deal count per stage | Pipeline by Stage |
+| Value by Stage | `bar-chart` | `/api/hubspot/deals/pipeline` → deal value per stage | Value by Stage |
 | Pipeline by Month | `pipeline` | `/api/hubspot/deals/monthly` | Pipeline by Month |
 
 Each import shows a loading spinner while fetching. Success shows a toast "Block added from HubSpot". Failure shows a destructive toast with the error message.

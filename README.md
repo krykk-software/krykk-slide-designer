@@ -147,6 +147,22 @@ Configurable canvas dimensions with presets:
 
 The app runs on port 5000 with the `npm run dev` command which starts both the Vite dev server and Express backend.
 
+## Specification & GitHub
+
+The authoritative product specification lives in **`SPECIFICATION.md`** at the project root. It covers all block types, data structures, API routes, database schema, templates, export formats, and more.
+
+**GitHub repository:** https://github.com/krykk-software/krykk-slide-designer
+
+### Keeping the spec up to date
+
+Whenever you add a new feature or change an existing one, you MUST:
+1. Update the relevant section(s) of `SPECIFICATION.md` (see the Section Update Map in §18).
+2. Add a line to the `## Changelog` table at the bottom of `SPECIFICATION.md` with today's date.
+3. Update the "Recent Changes" list in this `replit.md`.
+4. Push the updated `SPECIFICATION.md` to GitHub (via the GitHub integration) alongside the feature code.
+
+The GitHub repo is connected via the Replit GitHub integration (`connection:conn_github_01KG6CDDXV618Z67N70SAQ2KS2`). Files are pushed using the GitHub Contents API via `@replit/connectors-sdk`.
+
 ## Recent Changes
 
 - Initial implementation of slide designer

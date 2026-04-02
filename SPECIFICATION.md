@@ -26,8 +26,9 @@
 15. [Admin Dashboard](#15-admin-dashboard)
 16. [Legal Pages](#16-legal-pages)
 17. [Frontend Pages & Routing](#17-frontend-pages--routing)
-18. [Maintenance Guidelines](#18-maintenance-guidelines)
-19. [Changelog](#19-changelog)
+18. [HubSpot CRM Integration](#18-hubspot-crm-integration)
+19. [Maintenance Guidelines](#19-maintenance-guidelines)
+20. [Changelog](#20-changelog)
 
 ---
 
@@ -287,6 +288,20 @@ Handled by `registerAuthRoutes()` from the Replit integration. Registers the fol
 | PATCH | `/api/admin/users/:userId/suspend` | Admin | Suspend or reinstate a user |
 | DELETE | `/api/admin/users/:userId` | Admin | Delete a user and all their data |
 | GET | `/api/admin/contact-messages` | Admin | List all contact form submissions |
+
+### HubSpot CRM Routes
+
+All `/api/hubspot/*` routes require user authentication. Data is fetched live from HubSpot via the Replit connectors-sdk proxy.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/hubspot/status` | User | Returns `{ connected: boolean }` — whether HubSpot OAuth is active |
+| GET | `/api/hubspot/connect` | User | Redirects to Replit integrations panel to initiate HubSpot OAuth |
+| GET | `/api/hubspot/deals/summary` | User | Returns `DealSummary` — total, won, lost, open deal counts and values |
+| GET | `/api/hubspot/deals/pipeline` | User | Returns `PipelineStageBreakdown[]` — per-stage deal count and value |
+| GET | `/api/hubspot/deals/monthly` | User | Returns `PipelineData` — deals grouped by close-date month |
+| GET | `/api/hubspot/contacts/count` | User | Returns `{ count: number }` — total contact count |
+| GET | `/api/hubspot/companies/count` | User | Returns `{ count: number }` — total company count |
 
 ---
 
@@ -884,7 +899,82 @@ Main editor layout:
 
 ---
 
-## 18. Maintenance Guidelines
+## 18. HubSpot CRM Integration
+
+Slide Designer connects to HubSpot CRM via the Replit connectors-sdk OAuth proxy, allowing users to import live deal, contact, and company data directly into slide blocks.
+
+### Authentication Flow
+
+1. User clicks "Connect HubSpot Account" in the HubSpot tab of the Block Picker sidebar.
+2. The browser navigates to `GET /api/hubspot/connect`, which server-side redirects to the Replit integrations OAuth panel.
+3. After the user authorises the HubSpot app, the Replit connectors-sdk stores the OAuth token automatically.
+4. `GET /api/hubspot/status` returns `{ connected: true }` and the import cards become active.
+5. If the OAuth token expires or is revoked, `status` returns `{ connected: false }` and the user is prompted to reconnect.
+
+### Server-Side Data Layer (`server/hubspot.ts`)
+
+| Export | Description |
+|---|---|
+| `getDealSummary()` | Fetches all deals (paginated), returns total/won/lost/open counts and total/won values |
+| `getPipelineStageBreakdown()` | Groups deals by `dealstage`, returns count and value per stage |
+| `getDealsByMonth()` | Groups deals by `closedate` month, returns a `PipelineData` struct for the Pipeline block |
+| `getContactCount()` | Uses HubSpot search endpoint (`POST /crm/v3/objects/contacts/search`) for accurate total |
+| `getCompanyCount()` | Uses HubSpot search endpoint (`POST /crm/v3/objects/companies/search`) for accurate total |
+| `checkHubSpotConnection()` | Probes `/crm/v3/objects/contacts` and returns `boolean` |
+
+All HubSpot API calls go through `connectors.proxy("hubspot", path, options)` from `@replit/connectors-sdk`. The proxy injects the OAuth token automatically. Non-2xx responses throw an `Error` to prevent silently showing stale/empty data.
+
+#### Data Shapes Returned to the Client
+
+```typescript
+interface DealSummary {
+  totalCount: number;
+  wonCount: number;
+  lostCount: number;
+  openCount: number;
+  totalValue: number;   // Sum of all deal amounts
+  wonValue: number;     // Sum of closed-won deal amounts
+}
+
+interface PipelineStageBreakdown {
+  label: string;   // Human-readable stage name (formatted from HubSpot internal name)
+  value: number;   // Total deal value in stage
+  count: number;   // Number of deals in stage
+}
+
+// getDealsByMonth() returns the existing PipelineData type (see §7)
+```
+
+### Client-Side Panel (`client/src/components/HubSpotPanel.tsx`)
+
+The HubSpot panel is the second tab in the BlockPicker sidebar.
+
+#### Not Connected State
+
+- Shows the HubSpot logo, a brief description, and a "Connect HubSpot Account" button.
+- A "Check connection status" refresh button is also shown.
+
+#### Connected State — Import Cards
+
+When connected, 9 import cards are shown. Each card fetches fresh data (`cache: "no-store"`) from the corresponding API endpoint and inserts a pre-populated block onto the canvas:
+
+| Card | Block Type | Data Source | Block Title |
+|---|---|---|---|
+| Deals Won | `stat` | `/api/hubspot/deals/summary` → `wonCount` | Deals Won |
+| Deals Lost | `stat` | `/api/hubspot/deals/summary` → `lostCount` | Deals Lost |
+| Revenue Won | `stat` | `/api/hubspot/deals/summary` → `wonValue` | Revenue Won |
+| Pipeline Value | `stat` | `/api/hubspot/deals/summary` → `totalValue` | Pipeline Value |
+| Contacts | `stat` | `/api/hubspot/contacts/count` | Total Contacts |
+| Companies | `stat` | `/api/hubspot/companies/count` | Total Companies |
+| Win/Loss/Open | `bar-chart` | `/api/hubspot/deals/summary` | Win/Loss/Open Deals |
+| Pipeline by Stage | `bar-chart` | `/api/hubspot/deals/pipeline` | Pipeline by Stage |
+| Pipeline by Month | `pipeline` | `/api/hubspot/deals/monthly` | Pipeline by Month |
+
+Each import shows a loading spinner while fetching. Success shows a toast "Block added from HubSpot". Failure shows a destructive toast with the error message.
+
+---
+
+## 19. Maintenance Guidelines
 
 ### Keeping This Document Up to Date
 
@@ -894,7 +984,7 @@ Whenever a new feature is added or an existing feature changes:
 2. Update `replit.md` → "Recent Changes" with a one-line summary.
 3. Update `replit.md` → relevant feature sections if the architecture changed.
 4. Commit both files together with the feature code.
-5. Push to GitHub so the spec in the repository stays current.
+5. Push the updated `SPECIFICATION.md` to GitHub via the GitHub integration.
 
 ### Section Update Map
 
@@ -910,13 +1000,16 @@ Whenever a new feature is added or an existing feature changes:
 | Admin feature | §15 |
 | Auth changes | §4 |
 | Colour / theme changes | §14 |
+| New HubSpot data endpoint | §6 (HubSpot routes), §18 |
+| New CRM integration | §6, §18 |
 
 ---
 
-## 19. Changelog
+## 20. Changelog
 
 | Date | Change |
 |---|---|
+| 2026-04-02 | Added HubSpot CRM integration (deals, contacts, companies → slide blocks) |
 | 2026-04-02 | Added `SPECIFICATION.md`; connected project to GitHub |
 | 2026-04-02 | Fixed Safari icon rendering (hex alpha → hsla) |
 | 2026-04-02 | Fixed Pipeline block chart padding (stacked bars now fill chart area) |

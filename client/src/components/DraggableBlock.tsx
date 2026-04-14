@@ -1,5 +1,5 @@
 import Draggable, { DraggableData, DraggableEvent } from 'react-draggable';
-import { Block, StatData, SimpleValueData, ChartDataPoint, TextData, GanttData, ImageData, TableData, TimelineData, PipelineData, FunnelData, GRID_SIZE } from '@/lib/types';
+import { Block, StatData, SimpleValueData, ChartDataPoint, TextData, GanttData, ImageData, TableData, TimelineData, PipelineData, FunnelData, CalendarData, CalendarEventData, GRID_SIZE } from '@/lib/types';
 import { StatBlock } from './StatBlock';
 import { SimpleValueBlock } from './SimpleValueBlock';
 import { ChartBlock } from './ChartBlock';
@@ -10,6 +10,8 @@ import TableBlock from './TableBlock';
 import { TimelineBlock } from './TimelineBlock';
 import { PipelineBlock } from './PipelineBlock';
 import { FunnelBlock } from './FunnelBlock';
+import { CalendarBlock } from './CalendarBlock';
+import { CalendarEventBlock } from './CalendarEventBlock';
 import { X, Settings, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRef, useCallback, useState } from 'react';
@@ -308,6 +310,29 @@ export function DraggableBlock({ block, onDrag, onDelete, onEdit, onResize, onUp
               handleInlineUpdate({ ...block, title });
             } : undefined}
             onDataChange={onUpdateBlock ? (data: FunnelData) => {
+              handleInlineUpdate({ ...block, data });
+            } : undefined}
+          />
+        );
+      case 'calendar':
+        return (
+          <CalendarBlock
+            title={block.title}
+            data={block.data as CalendarData}
+            color={block.color}
+          />
+        );
+      case 'calendar-event':
+        return (
+          <CalendarEventBlock
+            title={block.title}
+            icon={block.icon}
+            data={block.data as CalendarEventData}
+            color={block.color}
+            onTitleChange={onUpdateBlock ? (title: string) => {
+              handleInlineUpdate({ ...block, title });
+            } : undefined}
+            onDataChange={onUpdateBlock ? (data: CalendarEventData) => {
               handleInlineUpdate({ ...block, data });
             } : undefined}
           />

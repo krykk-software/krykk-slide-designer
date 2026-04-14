@@ -215,3 +215,4 @@ The GitHub repo is connected via the Replit GitHub integration (`connection:conn
   - Uses Replit's connectors-sdk for authenticated HubSpot API proxy calls
   - New server module: server/hubspot.ts; new API routes under /api/hubspot/
 - Added theme color customization (monochromatic scale from a single hue, preset + custom slider)
+- Added Calendar block type with three view modes (week, month, year): interactive grid with time slots, day cells, or year overview; calendar-event block type (10 event types: Busy, Meeting, Focus Time, Travel, Break, Lunch, Out of Office, Holiday, Deadline, Workshop); Calendar slide template with a configuration dialog for view, date, working hours, and weekend toggle; Calendar Events category in block picker sidebar

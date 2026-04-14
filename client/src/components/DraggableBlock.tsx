@@ -320,6 +320,10 @@ export function DraggableBlock({ block, onDrag, onDelete, onEdit, onResize, onUp
             title={block.title}
             data={block.data as CalendarData}
             color={block.color}
+            onUpdate={onUpdateBlock ? (updates: Partial<CalendarData>) => {
+              handleInlineUpdate({ ...block, data: { ...(block.data as CalendarData), ...updates } });
+            } : undefined}
+            isInteractive={!isExporting}
           />
         );
       case 'calendar-event':

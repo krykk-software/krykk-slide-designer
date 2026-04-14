@@ -1,4 +1,4 @@
-export type BlockType = 'stat' | 'simple-value' | 'pie-chart' | 'bar-chart' | 'text' | 'gantt' | 'image' | 'table' | 'timeline' | 'pipeline' | 'funnel';
+export type BlockType = 'stat' | 'simple-value' | 'pie-chart' | 'bar-chart' | 'text' | 'gantt' | 'image' | 'table' | 'timeline' | 'pipeline' | 'funnel' | 'calendar' | 'calendar-event';
 
 export interface SimpleValueData {
   value: string;
@@ -104,6 +104,22 @@ export interface FunnelData {
   stages: FunnelStage[];
 }
 
+export interface CalendarData {
+  view: 'week' | 'month' | 'year';
+  weekStartDate: string;
+  startHour: number;
+  endHour: number;
+  showWeekends: boolean;
+  month: number;
+  year: number;
+  title: string;
+}
+
+export interface CalendarEventData {
+  label: string;
+  eventType: string;
+}
+
 export interface FooterSettings {
   enabled: boolean;
   height: number;
@@ -131,7 +147,7 @@ export interface Block {
   icon: string;
   position: BlockPosition;
   size: BlockSize;
-  data: StatData | SimpleValueData | ChartDataPoint[] | TextData | GanttData | ImageData | TableData | TimelineData | PipelineData | FunnelData;
+  data: StatData | SimpleValueData | ChartDataPoint[] | TextData | GanttData | ImageData | TableData | TimelineData | PipelineData | FunnelData | CalendarData | CalendarEventData;
   color: string;
 }
 
@@ -140,7 +156,7 @@ export interface BlockTemplate {
   title: string;
   icon: string;
   category: string;
-  defaultData: StatData | SimpleValueData | ChartDataPoint[] | TextData | GanttData | ImageData | TableData | TimelineData | PipelineData | FunnelData;
+  defaultData: StatData | SimpleValueData | ChartDataPoint[] | TextData | GanttData | ImageData | TableData | TimelineData | PipelineData | FunnelData | CalendarData | CalendarEventData;
   defaultSize: BlockSize;
   color: string;
 }
@@ -699,9 +715,100 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
     defaultSize: { width: 920, height: 500 },
     color: BLOCK_COLORS.blue,
   },
+  // Calendar Events
+  {
+    type: 'calendar-event',
+    title: 'Busy',
+    icon: 'Clock',
+    category: 'Calendar',
+    defaultData: { label: 'Busy', eventType: 'busy' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: BLOCK_COLORS.red,
+  },
+  {
+    type: 'calendar-event',
+    title: 'Meeting',
+    icon: 'Users',
+    category: 'Calendar',
+    defaultData: { label: 'Meeting', eventType: 'meeting' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: BLOCK_COLORS.blue,
+  },
+  {
+    type: 'calendar-event',
+    title: 'Focus Time',
+    icon: 'Brain',
+    category: 'Calendar',
+    defaultData: { label: 'Focus Time', eventType: 'focus' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: BLOCK_COLORS.purple,
+  },
+  {
+    type: 'calendar-event',
+    title: 'Travel',
+    icon: 'Plane',
+    category: 'Calendar',
+    defaultData: { label: 'Travel', eventType: 'travel' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: BLOCK_COLORS.yellow,
+  },
+  {
+    type: 'calendar-event',
+    title: 'Break',
+    icon: 'Coffee',
+    category: 'Calendar',
+    defaultData: { label: 'Break', eventType: 'break' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: BLOCK_COLORS.green,
+  },
+  {
+    type: 'calendar-event',
+    title: 'Lunch',
+    icon: 'Utensils',
+    category: 'Calendar',
+    defaultData: { label: 'Lunch', eventType: 'lunch' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: BLOCK_COLORS.orange,
+  },
+  {
+    type: 'calendar-event',
+    title: 'Out of Office',
+    icon: 'DoorOpen',
+    category: 'Calendar',
+    defaultData: { label: 'Out of Office', eventType: 'ooo' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: '#6B7280',
+  },
+  {
+    type: 'calendar-event',
+    title: 'Holiday',
+    icon: 'Palmtree',
+    category: 'Calendar',
+    defaultData: { label: 'Holiday', eventType: 'holiday' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: BLOCK_COLORS.teal,
+  },
+  {
+    type: 'calendar-event',
+    title: 'Deadline',
+    icon: 'AlertTriangle',
+    category: 'Calendar',
+    defaultData: { label: 'Deadline', eventType: 'deadline' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: '#7F1D1D',
+  },
+  {
+    type: 'calendar-event',
+    title: 'Workshop',
+    icon: 'BookOpen',
+    category: 'Calendar',
+    defaultData: { label: 'Workshop', eventType: 'workshop' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: BLOCK_COLORS.pink,
+  },
 ];
 
-export const CATEGORIES = ['Sales', 'Partners', 'LinkedIn', 'Email', 'Marketing', 'Website', 'Events', 'Planning', 'Other'] as const;
+export const CATEGORIES = ['Sales', 'Partners', 'LinkedIn', 'Email', 'Marketing', 'Website', 'Events', 'Planning', 'Calendar', 'Other'] as const;
 
 export const GRID_SIZE = 20; // Snap grid size in pixels
 
@@ -1404,5 +1511,13 @@ export const SLIDE_TEMPLATES: SlideTemplate[] = [
         color: BLOCK_COLORS.blue,
       },
     ],
+  },
+  {
+    id: 'calendar',
+    name: 'Calendar',
+    description: 'Interactive week, month or year calendar with event blocks',
+    category: 'Planning',
+    icon: 'CalendarDays',
+    blocks: [],
   },
 ];

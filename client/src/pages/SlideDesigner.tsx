@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { toPng } from 'html-to-image';
-import { Block, BlockTemplate, Page, SlideProject, CanvasSize, CANVAS_SIZES, DEFAULT_CANVAS_SIZE, SLIDE_TEMPLATES, SlideTemplate, ImageData, FooterSettings, DEFAULT_FOOTER_SETTINGS, BLOCK_COLORS, BLOCK_TEMPLATES, ChartDataPoint, PipelineData, FunnelData, TimelineData, TableData, CalendarData } from '@/lib/types';
+import { Block, BlockTemplate, Page, SlideProject, CanvasSize, CANVAS_SIZES, DEFAULT_CANVAS_SIZE, SLIDE_TEMPLATES, SlideTemplate, ImageData, FooterSettings, DEFAULT_FOOTER_SETTINGS, BLOCK_COLORS, BLOCK_TEMPLATES, ChartDataPoint, PipelineData, FunnelData, TimelineData, TableData, CalendarData, CalendarEventData, CalendarEventItem, CALENDAR_EVENT_TYPES } from '@/lib/types';
 import { generateMonochromaticScale } from '@/lib/utils';
 import { SlideCanvas } from '@/components/SlideCanvas';
 import { BlockPicker } from '@/components/BlockPicker';
@@ -367,6 +367,7 @@ export default function SlideDesigner() {
       month: calendarMonth,
       year: calendarYear,
       title,
+      events: [],
     };
 
     const calBlock: Omit<Block, 'id'> = {
@@ -402,6 +403,40 @@ export default function SlideDesigner() {
   }, [calendarView, calendarWeekStartDate, calendarStartHour, calendarEndHour, calendarShowWeekends, calendarMonth, calendarYear, canvasSize, pendingAddPage, pages.length, toast]);
 
   const handleAddBlock = useCallback((template: BlockTemplate) => {
+    if (template.type === 'calendar-event') {
+      const calBlock = blocks.find(b => b.type === 'calendar');
+      if (!calBlock) {
+        toast({ title: 'No calendar on this slide', description: 'Add a Calendar block first, then add events to it.' });
+        return;
+      }
+      const calData = calBlock.data as CalendarData;
+      const evData = template.defaultData as CalendarEventData;
+      const def = CALENDAR_EVENT_TYPES.find(t => t.key === evData.eventType);
+      let date: string;
+      if (calData.view === 'week') {
+        date = calData.weekStartDate || new Date().toISOString().split('T')[0];
+      } else {
+        const m = String(calData.month || 1).padStart(2, '0');
+        date = `${calData.year || new Date().getFullYear()}-${m}-01`;
+      }
+      const newEv: CalendarEventItem = {
+        id: nanoid(),
+        type: evData.eventType,
+        label: def?.label || template.title,
+        color: def?.defaultColor || template.color,
+        date,
+        startHour: calData.startHour || 9,
+        endHour: (calData.startHour || 9) + 1,
+      };
+      updateCurrentPageBlocks(prev => prev.map(b =>
+        b.id === calBlock.id
+          ? { ...b, data: { ...(b.data as CalendarData), events: [...((b.data as CalendarData).events || []), newEv] } }
+          : b
+      ));
+      toast({ title: 'Event added', description: `${newEv.label} added to calendar. Drag it to the right slot.` });
+      return;
+    }
+
     const existingPositions = blocks.map(b => b.position);
     let x = 20;
     let y = 20;
@@ -451,6 +486,11 @@ export default function SlideDesigner() {
     x = Math.max(0, Math.min(x, canvasSize.width - template.defaultSize.width));
     y = Math.max(0, Math.min(y, canvasSize.height - template.defaultSize.height));
 
+    if (template.type === 'calendar-event') {
+      handleAddBlock(template);
+      return;
+    }
+
     const newBlock: Block = {
       id: nanoid(),
       type: template.type,
@@ -463,7 +503,7 @@ export default function SlideDesigner() {
     };
 
     updateCurrentPageBlocks(prev => [...prev, newBlock]);
-  }, [canvasSize, updateCurrentPageBlocks]);
+  }, [canvasSize, updateCurrentPageBlocks, handleAddBlock]);
 
   const handleCanvasDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();

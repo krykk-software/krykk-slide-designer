@@ -1,4 +1,4 @@
-import { Block, StatData, SimpleValueData, ChartDataPoint, TextData, GanttData, GanttTask, ImageData, TableData, TimelineData, TimelineEvent, TimelineSegment, PipelineData, PipelineMonth, PipelineOpportunity, FunnelData, FunnelStage, BLOCK_COLORS } from '@/lib/types';
+import { Block, StatData, SimpleValueData, ChartDataPoint, TextData, GanttData, GanttTask, ImageData, TableData, TimelineData, TimelineEvent, TimelineSegment, PipelineData, PipelineMonth, PipelineOpportunity, FunnelData, FunnelStage, CalendarData, CalendarEventData, BLOCK_COLORS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1169,6 +1169,191 @@ export function BlockEditor({ block, open, onClose, onSave }: BlockEditorProps) 
         );
       }
 
+      case 'calendar': {
+        const data = editedBlock.data as CalendarData;
+        const updateCalendar = (fields: Partial<CalendarData>) => {
+          setEditedBlock({ ...editedBlock, data: { ...data, ...fields } });
+        };
+        const now = new Date();
+        const getMondayOfWeek = (dateStr: string) => {
+          const d = new Date(dateStr || now.toISOString().split('T')[0]);
+          const day = d.getDay();
+          const diff = (day + 6) % 7;
+          d.setDate(d.getDate() - diff);
+          return d.toISOString().split('T')[0];
+        };
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>View Mode</Label>
+              <div className="flex gap-2">
+                {(['week', 'month', 'year'] as const).map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => updateCalendar({ view: v })}
+                    className={`flex-1 py-1.5 rounded-md border text-sm font-medium transition-colors ${data.view === v ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-muted'}`}
+                    data-testid={`button-calendar-view-${v}`}
+                  >
+                    {v.charAt(0).toUpperCase() + v.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cal-title">Title</Label>
+              <Input
+                id="cal-title"
+                value={data.title || ''}
+                onChange={e => updateCalendar({ title: e.target.value })}
+                placeholder="Calendar title..."
+                data-testid="input-calendar-title"
+              />
+            </div>
+
+            {data.view === 'week' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="cal-week">Week starting (Monday)</Label>
+                  <Input
+                    id="cal-week"
+                    type="date"
+                    value={data.weekStartDate || ''}
+                    onChange={e => updateCalendar({ weekStartDate: getMondayOfWeek(e.target.value) })}
+                    data-testid="input-calendar-week"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="cal-start-hour">Start hour</Label>
+                    <Input
+                      id="cal-start-hour"
+                      type="number"
+                      min={0}
+                      max={22}
+                      value={data.startHour}
+                      onChange={e => updateCalendar({ startHour: Math.min(parseInt(e.target.value) || 0, data.endHour - 1) })}
+                      data-testid="input-calendar-start-hour"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cal-end-hour">End hour</Label>
+                    <Input
+                      id="cal-end-hour"
+                      type="number"
+                      min={1}
+                      max={24}
+                      value={data.endHour}
+                      onChange={e => updateCalendar({ endHour: Math.max(parseInt(e.target.value) || 24, data.startHour + 1) })}
+                      data-testid="input-calendar-end-hour"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="cal-weekends"
+                    type="checkbox"
+                    checked={data.showWeekends}
+                    onChange={e => updateCalendar({ showWeekends: e.target.checked })}
+                    className="w-4 h-4"
+                    data-testid="checkbox-calendar-weekends"
+                  />
+                  <Label htmlFor="cal-weekends">Show weekends</Label>
+                </div>
+              </>
+            )}
+
+            {data.view === 'month' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="cal-month">Month</Label>
+                  <select
+                    id="cal-month"
+                    value={data.month}
+                    onChange={e => updateCalendar({ month: parseInt(e.target.value) })}
+                    className="w-full border border-border rounded-md px-3 py-1.5 text-sm bg-background"
+                    data-testid="select-calendar-month"
+                  >
+                    {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                      <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cal-year-m">Year</Label>
+                  <Input
+                    id="cal-year-m"
+                    type="number"
+                    value={data.year}
+                    onChange={e => updateCalendar({ year: parseInt(e.target.value) || new Date().getFullYear() })}
+                    min={2020}
+                    max={2050}
+                    data-testid="input-calendar-year-month"
+                  />
+                </div>
+              </div>
+            )}
+
+            {data.view === 'year' && (
+              <div className="space-y-2">
+                <Label htmlFor="cal-year">Year</Label>
+                <Input
+                  id="cal-year"
+                  type="number"
+                  value={data.year}
+                  onChange={e => updateCalendar({ year: parseInt(e.target.value) || new Date().getFullYear() })}
+                  min={2020}
+                  max={2050}
+                  data-testid="input-calendar-year"
+                />
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case 'calendar-event': {
+        const data = editedBlock.data as CalendarEventData;
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="event-label">Event Label</Label>
+              <Input
+                id="event-label"
+                value={data.label}
+                onChange={e => setEditedBlock({ ...editedBlock, data: { ...data, label: e.target.value } })}
+                placeholder="Event name..."
+                data-testid="input-event-label"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="event-type">Event Type</Label>
+              <select
+                id="event-type"
+                value={data.eventType}
+                onChange={e => setEditedBlock({ ...editedBlock, data: { ...data, eventType: e.target.value } })}
+                className="w-full border border-border rounded-md px-3 py-1.5 text-sm bg-background"
+                data-testid="select-event-type"
+              >
+                {['busy', 'meeting', 'focus', 'travel', 'break', 'lunch', 'ooo', 'holiday', 'deadline', 'workshop'].map(t => (
+                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1).replace('ooo', 'Out of Office')}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="event-block-title">Block Title</Label>
+              <Input
+                id="event-block-title"
+                value={editedBlock.title}
+                onChange={e => setEditedBlock({ ...editedBlock, title: e.target.value })}
+                data-testid="input-event-block-title"
+              />
+            </div>
+          </div>
+        );
+      }
+
       default:
         return null;
     }
@@ -1179,7 +1364,7 @@ export function BlockEditor({ block, open, onClose, onSave }: BlockEditorProps) 
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="block-editor-dialog">
         <DialogHeader>
           <DialogTitle>
-            Edit {editedBlock?.type === 'stat' ? 'Stat' : editedBlock?.type === 'text' ? 'Text' : editedBlock?.type === 'gantt' ? 'Gantt' : editedBlock?.type === 'table' ? 'Table' : editedBlock?.type === 'image' ? 'Image' : editedBlock?.type === 'timeline' ? 'Timeline' : editedBlock?.type === 'pipeline' ? 'Pipeline' : editedBlock?.type === 'funnel' ? 'Funnel' : 'Chart'} Block
+            Edit {editedBlock?.type === 'stat' ? 'Stat' : editedBlock?.type === 'text' ? 'Text' : editedBlock?.type === 'gantt' ? 'Gantt' : editedBlock?.type === 'table' ? 'Table' : editedBlock?.type === 'image' ? 'Image' : editedBlock?.type === 'timeline' ? 'Timeline' : editedBlock?.type === 'pipeline' ? 'Pipeline' : editedBlock?.type === 'funnel' ? 'Funnel' : editedBlock?.type === 'calendar' ? 'Calendar' : editedBlock?.type === 'calendar-event' ? 'Calendar Event' : 'Chart'} Block
           </DialogTitle>
           <DialogDescription>
             Modify the block data and settings below.

@@ -1010,6 +1010,7 @@ Whenever a new feature is added or an existing feature changes:
 
 | Date | Change |
 |---|---|
+| 2026-04-14 | Added Calendar block type (week/month/year grid), CalendarEvent blocks (10 types), and Calendar slide template with view/date configuration dialog |
 | 2026-04-02 | Added HubSpot CRM integration (deals, contacts, companies → slide blocks) |
 | 2026-04-02 | Added `SPECIFICATION.md`; connected project to GitHub |
 | 2026-04-02 | Fixed Safari icon rendering (hex alpha → hsla) |

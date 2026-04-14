@@ -99,7 +99,7 @@ export function BlockPicker({ onAddBlock, onAddImageBlock }: BlockPickerProps) {
                       className="border rounded-md bg-card/50"
                     >
                       <AccordionTrigger className="px-3 py-2 text-sm font-medium hover:no-underline">
-                        {category} KPIs
+                        {category === 'Calendar' || category === 'Planning' ? category : `${category} KPIs`}
                       </AccordionTrigger>
                       <AccordionContent className="px-3 pb-3">
                         <div className="grid grid-cols-2 gap-2">

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { toPng } from 'html-to-image';
-import { Block, BlockTemplate, Page, SlideProject, CanvasSize, CANVAS_SIZES, DEFAULT_CANVAS_SIZE, SLIDE_TEMPLATES, SlideTemplate, ImageData, FooterSettings, DEFAULT_FOOTER_SETTINGS, BLOCK_COLORS, BLOCK_TEMPLATES, ChartDataPoint, PipelineData, FunnelData, TimelineData, TableData } from '@/lib/types';
+import { Block, BlockTemplate, Page, SlideProject, CanvasSize, CANVAS_SIZES, DEFAULT_CANVAS_SIZE, SLIDE_TEMPLATES, SlideTemplate, ImageData, FooterSettings, DEFAULT_FOOTER_SETTINGS, BLOCK_COLORS, BLOCK_TEMPLATES, ChartDataPoint, PipelineData, FunnelData, TimelineData, TableData, CalendarData } from '@/lib/types';
 import { generateMonochromaticScale } from '@/lib/utils';
 import { SlideCanvas } from '@/components/SlideCanvas';
 import { BlockPicker } from '@/components/BlockPicker';
@@ -98,6 +98,19 @@ export default function SlideDesigner() {
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
   const [newPageName, setNewPageName] = useState('');
   const [pendingAddPage, setPendingAddPage] = useState(false);
+  const [isCalendarConfigOpen, setIsCalendarConfigOpen] = useState(false);
+  const [calendarConfigPendingTemplate, setCalendarConfigPendingTemplate] = useState<SlideTemplate | null>(null);
+  const [calendarView, setCalendarView] = useState<'week' | 'month' | 'year'>('month');
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth() + 1);
+  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
+  const [calendarStartHour, setCalendarStartHour] = useState(8);
+  const [calendarEndHour, setCalendarEndHour] = useState(18);
+  const [calendarShowWeekends, setCalendarShowWeekends] = useState(true);
+  const [calendarWeekStartDate, setCalendarWeekStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.toISOString().split('T')[0];
+  });
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
   const [projectName, setProjectName] = useState('My Slide Project');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -304,6 +317,11 @@ export default function SlideDesigner() {
   }, []);
 
   const handleSelectTemplate = useCallback((template: SlideTemplate) => {
+    if (template.id === 'calendar') {
+      setCalendarConfigPendingTemplate(template);
+      setIsCalendarConfigOpen(true);
+      return;
+    }
     if (pendingAddPage) {
       const newPage = createPageFromTemplate(template, `Page ${pages.length + 1}`);
       setPages(prev => [...prev, newPage]);
@@ -324,6 +342,64 @@ export default function SlideDesigner() {
     }
     setIsTemplateDialogOpen(false);
   }, [pages.length, pendingAddPage, toast]);
+
+  const handleConfirmCalendarConfig = useCallback(() => {
+    const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    let title = '';
+    if (calendarView === 'week') {
+      const d = new Date(calendarWeekStartDate);
+      const end = new Date(d);
+      end.setDate(d.getDate() + (calendarShowWeekends ? 6 : 4));
+      title = `Week of ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    } else if (calendarView === 'month') {
+      title = `${MONTH_NAMES[calendarMonth - 1]} ${calendarYear}`;
+    } else {
+      title = String(calendarYear);
+    }
+
+    const calData: CalendarData = {
+      view: calendarView,
+      weekStartDate: calendarWeekStartDate,
+      startHour: calendarStartHour,
+      endHour: calendarEndHour,
+      showWeekends: calendarShowWeekends,
+      month: calendarMonth,
+      year: calendarYear,
+      title,
+    };
+
+    const calBlock: Omit<Block, 'id'> = {
+      type: 'calendar',
+      title,
+      icon: 'CalendarDays',
+      position: { x: 0, y: 0 },
+      size: { width: canvasSize.width, height: canvasSize.height },
+      data: calData,
+      color: BLOCK_COLORS.blue,
+    };
+
+    const page: Page = {
+      id: nanoid(),
+      name: title,
+      blocks: [{ ...calBlock, id: nanoid() }],
+    };
+
+    if (pendingAddPage) {
+      setPages(prev => [...prev, page]);
+      setCurrentPageIndex(pages.length);
+      setPendingAddPage(false);
+      toast({ title: 'Page added', description: `Calendar page "${title}" created.` });
+    } else {
+      setPages([page]);
+      setCurrentPageIndex(0);
+      toast({ title: 'Project started', description: `Calendar "${title}" created.` });
+    }
+
+    setIsCalendarConfigOpen(false);
+    setIsTemplateDialogOpen(false);
+    setCalendarConfigPendingTemplate(null);
+  }, [calendarView, calendarWeekStartDate, calendarStartHour, calendarEndHour, calendarShowWeekends, calendarMonth, calendarYear, canvasSize, pendingAddPage, pages.length, toast]);
 
   const handleAddBlock = useCallback((template: BlockTemplate) => {
     const existingPositions = blocks.map(b => b.position);
@@ -785,6 +861,149 @@ export default function SlideDesigner() {
 
   const totalBlocks = pages.reduce((sum, page) => sum + page.blocks.length, 0);
 
+  const renderCalendarConfigDialog = () => (
+    <Dialog open={isCalendarConfigOpen} onOpenChange={(open) => { if (!open) setIsCalendarConfigOpen(false); }}>
+      <DialogContent className="max-w-md" data-testid="calendar-config-dialog">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span>Configure Calendar</span>
+          </DialogTitle>
+          <DialogDescription>Choose your calendar view and date settings.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">View Mode</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['week', 'month', 'year'] as const).map(v => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setCalendarView(v)}
+                  className={`py-2 rounded-lg border text-sm font-medium transition-colors ${calendarView === v ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-muted'}`}
+                  data-testid={`button-cal-config-view-${v}`}
+                >
+                  {v.charAt(0).toUpperCase() + v.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {calendarView === 'week' && (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Week starting (Monday)</label>
+                <input
+                  type="date"
+                  value={calendarWeekStartDate}
+                  onChange={e => {
+                    const d = new Date(e.target.value || new Date().toISOString());
+                    const diff = (d.getDay() + 6) % 7;
+                    d.setDate(d.getDate() - diff);
+                    setCalendarWeekStartDate(d.toISOString().split('T')[0]);
+                  }}
+                  className="w-full border border-border rounded-md px-3 py-1.5 text-sm bg-background"
+                  data-testid="input-cal-config-week"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Start hour</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={22}
+                    value={calendarStartHour}
+                    onChange={e => setCalendarStartHour(Math.min(parseInt(e.target.value) || 0, calendarEndHour - 1))}
+                    className="w-full border border-border rounded-md px-3 py-1.5 text-sm bg-background"
+                    data-testid="input-cal-config-start-hour"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">End hour</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={calendarEndHour}
+                    onChange={e => setCalendarEndHour(Math.max(parseInt(e.target.value) || 24, calendarStartHour + 1))}
+                    className="w-full border border-border rounded-md px-3 py-1.5 text-sm bg-background"
+                    data-testid="input-cal-config-end-hour"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  id="cal-cfg-weekends"
+                  type="checkbox"
+                  checked={calendarShowWeekends}
+                  onChange={e => setCalendarShowWeekends(e.target.checked)}
+                  className="w-4 h-4"
+                  data-testid="checkbox-cal-config-weekends"
+                />
+                <label htmlFor="cal-cfg-weekends" className="text-sm">Show weekends</label>
+              </div>
+            </>
+          )}
+
+          {calendarView === 'month' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Month</label>
+                <select
+                  value={calendarMonth}
+                  onChange={e => setCalendarMonth(parseInt(e.target.value))}
+                  className="w-full border border-border rounded-md px-3 py-1.5 text-sm bg-background"
+                  data-testid="select-cal-config-month"
+                >
+                  {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                    <option key={i} value={i + 1}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Year</label>
+                <input
+                  type="number"
+                  value={calendarYear}
+                  onChange={e => setCalendarYear(parseInt(e.target.value) || new Date().getFullYear())}
+                  min={2020}
+                  max={2050}
+                  className="w-full border border-border rounded-md px-3 py-1.5 text-sm bg-background"
+                  data-testid="input-cal-config-year-month"
+                />
+              </div>
+            </div>
+          )}
+
+          {calendarView === 'year' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Year</label>
+              <input
+                type="number"
+                value={calendarYear}
+                onChange={e => setCalendarYear(parseInt(e.target.value) || new Date().getFullYear())}
+                min={2020}
+                max={2050}
+                className="w-full border border-border rounded-md px-3 py-1.5 text-sm bg-background"
+                data-testid="input-cal-config-year"
+              />
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsCalendarConfigOpen(false)} data-testid="button-cal-config-cancel">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmCalendarConfig} data-testid="button-cal-config-confirm">
+            Create Calendar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (pages.length === 0) {
     return (
       <div className="h-screen flex flex-col bg-background" data-testid="slide-designer">
@@ -908,6 +1127,8 @@ export default function SlideDesigner() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {renderCalendarConfigDialog()}
       </div>
     );
   }
@@ -1797,6 +2018,8 @@ export default function SlideDesigner() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {renderCalendarConfigDialog()}
     </div>
   );
 }

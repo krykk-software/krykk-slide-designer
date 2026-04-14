@@ -104,6 +104,31 @@ export interface FunnelData {
   stages: FunnelStage[];
 }
 
+export interface CalendarEventItem {
+  id: string;
+  type: string;
+  label: string;
+  color: string;
+  date: string;
+  startHour: number;
+  endHour: number;
+}
+
+export const CALENDAR_EVENT_TYPES: { key: string; label: string; defaultColor: string; icon: string; customizable?: boolean }[] = [
+  { key: 'busy',     label: 'Busy',          defaultColor: '#ef4444', icon: 'Clock' },
+  { key: 'meeting',  label: 'Meeting',        defaultColor: '#3b82f6', icon: 'Users' },
+  { key: 'focus',    label: 'Focus Time',     defaultColor: '#8b5cf6', icon: 'Brain' },
+  { key: 'travel',   label: 'Travel',         defaultColor: '#f59e0b', icon: 'Plane' },
+  { key: 'break',    label: 'Break',          defaultColor: '#10b981', icon: 'Coffee' },
+  { key: 'lunch',    label: 'Lunch',          defaultColor: '#f97316', icon: 'Utensils' },
+  { key: 'ooo',      label: 'Out of Office',  defaultColor: '#6b7280', icon: 'DoorOpen' },
+  { key: 'holiday',  label: 'Holiday',        defaultColor: '#ec4899', icon: 'Palmtree' },
+  { key: 'deadline', label: 'Deadline',       defaultColor: '#dc2626', icon: 'AlertTriangle' },
+  { key: 'workshop', label: 'Workshop',       defaultColor: '#7c3aed', icon: 'BookOpen' },
+  { key: 'test',     label: 'Test',           defaultColor: '#0ea5e9', icon: 'FileCheck', customizable: true },
+  { key: 'study',    label: 'Study',          defaultColor: '#6366f1', icon: 'GraduationCap', customizable: true },
+];
+
 export interface CalendarData {
   view: 'week' | 'month' | 'year';
   weekStartDate: string;
@@ -113,6 +138,7 @@ export interface CalendarData {
   month: number;
   year: number;
   title: string;
+  events: CalendarEventItem[];
 }
 
 export interface CalendarEventData {
@@ -805,6 +831,24 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
     defaultData: { label: 'Workshop', eventType: 'workshop' } as CalendarEventData,
     defaultSize: { width: 140, height: 40 },
     color: BLOCK_COLORS.pink,
+  },
+  {
+    type: 'calendar-event',
+    title: 'Test',
+    icon: 'FileCheck',
+    category: 'Calendar',
+    defaultData: { label: 'Test', eventType: 'test' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: '#0ea5e9',
+  },
+  {
+    type: 'calendar-event',
+    title: 'Study',
+    icon: 'GraduationCap',
+    category: 'Calendar',
+    defaultData: { label: 'Study', eventType: 'study' } as CalendarEventData,
+    defaultSize: { width: 140, height: 40 },
+    color: '#6366f1',
   },
 ];
 

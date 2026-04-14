@@ -1,4 +1,4 @@
-import { Block, StatData, SimpleValueData, ChartDataPoint, TextData, GanttData, GanttTask, ImageData, TableData, TimelineData, TimelineEvent, TimelineSegment, PipelineData, PipelineMonth, PipelineOpportunity, FunnelData, FunnelStage, CalendarData, CalendarEventData, BLOCK_COLORS } from '@/lib/types';
+import { Block, StatData, SimpleValueData, ChartDataPoint, TextData, GanttData, GanttTask, ImageData, TableData, TimelineData, TimelineEvent, TimelineSegment, PipelineData, PipelineMonth, PipelineOpportunity, FunnelData, FunnelStage, CalendarData, CalendarEventData, CalendarEventItem, CALENDAR_EVENT_TYPES, BLOCK_COLORS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1307,6 +1307,66 @@ export function BlockEditor({ block, open, onClose, onSave }: BlockEditorProps) 
                   max={2050}
                   data-testid="input-calendar-year"
                 />
+              </div>
+            )}
+
+            {/* Events management */}
+            {(data.events || []).length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <Label>Events ({(data.events || []).length})</Label>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {(data.events || []).map((ev: CalendarEventItem) => {
+                    const def = CALENDAR_EVENT_TYPES.find(t => t.key === ev.type);
+                    return (
+                      <div key={ev.id} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: ev.color }} />
+                        <Input
+                          value={ev.label}
+                          onChange={e => updateCalendar({
+                            events: (data.events || []).map((x: CalendarEventItem) => x.id === ev.id ? { ...x, label: e.target.value } : x)
+                          })}
+                          className="flex-1 h-7 text-xs"
+                          placeholder="Event label"
+                        />
+                        <select
+                          value={ev.type}
+                          onChange={e => {
+                            const newDef = CALENDAR_EVENT_TYPES.find(t => t.key === e.target.value);
+                            updateCalendar({
+                              events: (data.events || []).map((x: CalendarEventItem) => x.id === ev.id
+                                ? { ...x, type: e.target.value, color: x.color === def?.defaultColor ? (newDef?.defaultColor || x.color) : x.color }
+                                : x)
+                            });
+                          }}
+                          className="border border-border rounded px-1 py-0.5 text-xs bg-background"
+                          title="Event type"
+                        >
+                          {CALENDAR_EVENT_TYPES.map(t => (
+                            <option key={t.key} value={t.key}>{t.label}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="color"
+                          value={ev.color}
+                          onChange={e => updateCalendar({
+                            events: (data.events || []).map((x: CalendarEventItem) => x.id === ev.id ? { ...x, color: e.target.value } : x)
+                          })}
+                          className="w-7 h-7 rounded cursor-pointer border border-border p-0.5 bg-background"
+                          title="Event colour"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="w-6 h-6 text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => updateCalendar({ events: (data.events || []).filter((x: CalendarEventItem) => x.id !== ev.id) })}
+                          title="Delete event"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
